@@ -13,11 +13,12 @@ import argparse
 import numpy as np
 from tkinter import Tk, filedialog
 import datetime
-
+import shutil
 class GenerateDriveLink:
     def __init__(self):
-        self.audio_dir = '/Volumes/One Touch/Data/Audio/'
         self.output_dir = './drive_link_results/'
+        if Path(self.output_dir).exists():
+            shutil.rmtree(self.output_dir)
         if not Path(self.output_dir).exists():
             os.makedirs(self.output_dir)
         self.SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
@@ -33,14 +34,15 @@ class GenerateDriveLink:
     def get_dir_info(self):
         root = Tk()
         root.withdraw()
+        print("Select the audio folder")
+        self.audio_dir = filedialog.askdirectory(title="Select the audio folder")
+        root.update()
         print("Select the csv file")
         self.csv_filepath = filedialog.askopenfilename(title="Select the csv file")
         root.update()
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(description='')
-        parser.add_argument(
-            '-f', '--csvfile', help="path of the csvfile containing the csv file", type=str)
         parser.add_argument(
             '-i', '--drivefolderid', help="id of the drive folder", type=str)
         return parser.parse_args()
