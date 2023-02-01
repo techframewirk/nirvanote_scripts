@@ -1,0 +1,7 @@
+Audio/
+download_data/
+drive_link_results/
+video_gen_data/
+Videos/
+*.csv
+*.json

@@ -57,7 +57,7 @@ class CreateVideo:
             print(f"{video_filepath} exists")
             return
         
-        cmd = f'ffmpeg -i {image_filepath} -i {audio_filepath} -acodec aac -vcodec libx264 {video_filepath}'
+        cmd = f'ffmpeg -i {image_filepath} -i {audio_filepath} -acodec aac -vcodec libx264 -vf scale=1920:1080 {video_filepath}'
         
         subprocess.run(cmd,shell=True)
 

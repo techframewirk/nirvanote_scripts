@@ -25,10 +25,13 @@ class GenerateDriveLink:
             os.makedirs(self.output_dir)
         self.SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
         args = self.parse_arguments()
+        self.drivefolderid = args.drivefolderid
+
+        self.get_dir_info()
+
         timestamp = datetime.datetime.now()
         outputfilename = os.path.basename(self.csv_filepath).replace('.csv',str("_"+str(timestamp)+'.csv'))
         self.outputfilepath = self.output_dir + outputfilename
-        self.drivefolderid = args.drivefolderid
         self.main()
 
     def get_dir_info(self):

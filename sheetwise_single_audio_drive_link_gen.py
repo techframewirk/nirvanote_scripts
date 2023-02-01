@@ -27,7 +27,6 @@ class GenerateDriveLink:
         timestamp = datetime.datetime.now()
         outputfilename = os.path.basename(self.csv_filepath).replace('.csv',str("_"+str(timestamp)+'.csv'))
         self.outputfilepath = self.output_dir + outputfilename
-        print(self.outputfilepath)
         self.drivefolderid = args.drivefolderid
         self.main()
 
