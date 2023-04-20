@@ -4,11 +4,11 @@ import csv
 import json
 import audio_metadata
 import argparse
-import moviepy.editor as me
 import numpy as np
 from tkinter import Tk, filedialog
 import subprocess
 import shutil
+from moviepy.editor import *
 
 class CreateVideo:
     def __init__(self):
@@ -49,15 +49,41 @@ class CreateVideo:
         if not Path(video_dirname).exists():
             os.makedirs(video_dirname)
 
-        image_filepath = picfile.replace(" ","\ ")
-        audio_filepath = audfile.replace(" ","\ ")
+        image_filepath = str(picfile)
+        audio_filepath = str(audfile)
 
-        video_filepath = Path('./Videos/'+ audfile.split(self.audio_dir)[1].replace('.wav','.mp4').replace(" ","\ "))
+        video_filepath = str(Path('./Videos/'+ audfile.split(self.audio_dir)[1].replace('.wav','.mp4').replace(" ","\ ")))
+
+        image = ImageClip(image_filepath)
+
+        # Load the audio file
+        audio = AudioFileClip(audio_filepath)
+
+        # Set the duration of the video to match the audio length
+        duration = audio.duration
+
+        # Combine the image and audio into a video clip
+        video = image.set_duration(duration).set_audio(audio)
+
+        # Write the video to a file
+
+
         if Path(video_filepath).exists():
             print(f"{video_filepath} exists")
             return
+        video_dirname = '~/Documents/Videos/'+video_id
         
-        cmd = f'ffmpeg -i {image_filepath} -i {audio_filepath} -acodec aac -vcodec libx264 -vf scale=1920:1080 {video_filepath}'
+        if not Path(video_dirname).exists():
+            os.makedirs(video_dirname)
+        video_filepath = str(Path('~/Documents/Videos/'+ audfile.split(self.audio_dir)[1].replace('.wav','.mp4').replace(" ","\ ")))
+        
+        video.write_videofile(video_filepath, fps=24, codec="libx264")
+        
+
+
+
+
+        cmd = f"ffmpeg -loop 1 -i {image_filepath} -i {audio_filepath} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest {video_filepath}"
         
         subprocess.run(cmd,shell=True)
 
@@ -109,7 +135,7 @@ class CreateVideo:
 
 
     def get_spec_img_data(self,spec_image_dir):
-        spec_image_dir = "/Volumes/One Touch/Data/Final_images/MainCollection/"
+        spec_image_dir = self.spec_image_dir
         spec_img_data = {}
         if Path('./video_gen_data/spec_img_data.json').exists():
             spec_img_data = self.get_from_json('./video_gen_data/spec_img_data.json')
@@ -211,23 +237,12 @@ class CreateVideo:
         imgs = total_img_vs_path.keys()
         missed_csv = [["District","Image name","Audio"]]
         error_csv = [["Audio name"]]
-        for img, audios in img_vs_audio.items():
-            for audio in audios:
-                district =""
-                if 'IMG_' in str(audio):
-                    [state, district, speaker_id, unknown, img1, img2,img3, t1,t2] = os.path.basename(audio).split('_')
-                elif 'IMG' in str(audio) and not 'IMG_' in str(audio):
-                    [state, district, speaker_id, unknown, img1, t1,t2] = os.path.basename(audio).split('_')
-                    print(total_img_vs_path[img])
-                else:
-                    [state, district, speaker_id, unknown, img1, img2, t1,t2] = os.path.basename(audio).split('_')
-
-                if img not in imgs:
-                    missed_csv.append([district,img,audio])
-                    print(total_img_vs_path[img])
-                    continue
-                image_path = total_img_vs_path[img]
-                audio_filepath = audio
+        for img, audio_filepaths in img_vs_audio.items():
+            if img not in imgs:
+                missed_csv.append([audio_filepath])
+                continue
+            image_path = total_img_vs_path[img]
+            for audio_filepath in audio_filepaths:
                 self.create_video(image_path,audio_filepath)
           
         self.write_to_csv("missed.csv",missed_csv)

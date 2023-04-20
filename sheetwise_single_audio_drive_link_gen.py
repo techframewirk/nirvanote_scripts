@@ -53,6 +53,7 @@ class GenerateDriveLink:
             csvwriter.writerows(data)
 
     def read_csv(self,csv_filepath):
+        print("read_csv")
         data = csv.reader(open(csv_filepath))
         return list(data)
 
@@ -77,6 +78,8 @@ class GenerateDriveLink:
             if not row[0].endswith('.wav'):
                 row[0] = row[0] + '.wav'
             data.append(row[0])
+        self.write_to_json("csv.json",data)
+        print(len(data))
         return data
 
     def get_audio_duration(self,filepath):
@@ -87,11 +90,12 @@ class GenerateDriveLink:
         for audio_filepath in audio_filepath_list:
             filename = os.path.basename(audio_filepath).replace('.wav','.mp4')
             data[filename] = audio_filepath
+        self.write_to_json("./drive_link_results/video_name_vs_audio_paths.json",data)
         return data
 
-    def get_audio_vs_duration(self,audio_filepath_list):
+    def get_audio_vs_duration(self,audio_path_arr):
         data = {}
-        for audio_filepath in audio_filepath_list:
+        for audio_filepath in audio_path_arr:
             audio_name = os.path.basename(audio_filepath).replace('.wav','.mp4')
             duration = self.get_audio_duration(os.path.join(self.audio_dir , audio_filepath))
             data[audio_name] = duration
@@ -118,40 +122,50 @@ class GenerateDriveLink:
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
-
         try:
             service = build('drive', 'v3', credentials=creds)
             topFolderId = self.drivefolderid 
-            audio_filepath_list = self.get_audio_file_names_from_csv(self.read_csv(self.csv_filepath))
-            audio_vs_duration = self.get_audio_vs_duration(audio_filepath_list)
-            audioname_vs_audiopath = self.get_audio_name_vs_path(audio_filepath_list)
+            print(topFolderId)
+            audios = []
+            audio_path_list = self.get_audio_file_names_from_csv(self.read_csv(self.csv_filepath))
+            audio_vs_duration = self.get_audio_vs_duration(audio_path_list)
+            audioname_vs_audiopath = self.get_audio_name_vs_path(audio_path_list)
             dates = []
             pageToken = ""
-            root_url = 'https://drive.google.com/file/d/'
-            while pageToken is not None:
-                response = service.files().list(q="'" + topFolderId + "' in parents", pageSize=1000, pageToken=pageToken, fields="nextPageToken, files(id, name)").execute()
-                dates.extend(response.get('files', []))
-                pageToken = response.get('nextPageToken')
+            result_csv_data = []
 
-            image_list = []
-            count = 0
-            audios = []
-            for date in dates:
-                pageToken = ""
-                root_url = 'https://drive.google.com/file/d/'
+            root_url = 'https://drive.google.com/file/d/'
+            if Path("single_audios.json").exists():
+                audios = self.get_from_json("single_audios.json")
+            else:
                 while pageToken is not None:
-                    results = service.files().list(pageSize=1000, q="'"+date['id']+"' in parents", fields="nextPageToken, files(id, name, mimeType)").execute()
-                    audios.extend( results.get('files',[]))
-                    pageToken = results.get('nextPageToken')
-            print(len(audios))
+                    response = service.files().list(q="'" + topFolderId + "' in parents", pageSize=1000, pageToken=pageToken, fields="nextPageToken, files(id, name)").execute()
+                    dates.extend(response.get('files', []))
+                    pageToken = response.get('nextPageToken')                
+                for date in dates:
+                    pageToken = ""
+                    while pageToken is not None:
+                        results = service.files().list(pageSize=1000, q="'"+date['id']+"' in parents",pageToken=pageToken ,fields="nextPageToken, files(id, name, mimeType)").execute()
+                        audios.extend( results.get('files',[]))
+                        pageToken = results.get('nextPageToken')
+                self.write_to_json("single_audios.json",audios)
+            videoname_vs_fileid = {}
             for audio in audios:
                 if audio['name'].startswith('._'):
                     continue
-                state = audio['name'].split('_')[0]
-                district = audio['name'].split('_')[1]
-                image_list.append([state,district,audioname_vs_audiopath[audio['name']],audio_vs_duration[audio['name']],root_url+audio['id']])     
-            self.write_to_csv(self.outputfilepath,image_list,[])
-            print(count)
+                videoname_vs_fileid[audio['name']] = audio['id']
+                
+            for audio_path in audio_path_list:
+                state = os.path.basename(audio_path).split("_")[0]
+                district = os.path.basename(audio_path).split("_")[1]
+                video_name = os.path.basename(audio_path).replace('.wav','.mp4')
+                result_csv_data.append([state,
+                                        district,
+                                        audioname_vs_audiopath[video_name],
+                                        audio_vs_duration[video_name],
+                                        (root_url+videoname_vs_fileid[video_name])
+                                        ])     
+            self.write_to_csv(self.outputfilepath,result_csv_data,[])
         except HttpError as error:
             print(f'An error occurred: {error}')
 

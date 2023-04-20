@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 import os 
 from tkinter import Tk, filedialog
+import argparse
 
 class InvoiceGen():
   def __init__(self):
@@ -20,7 +21,6 @@ class InvoiceGen():
       os.makedirs(self.pdf_dir)
     self.added = {}
     self.count = 1
-    
     self.get_dir_info()
     self.get_history_of_invoices()
     self.get_invoice_data()
@@ -32,14 +32,17 @@ class InvoiceGen():
     print("Select the invoice csv file")
     self.csvfilepath = filedialog.askopenfilename(title="Select the invoice csv file")
     root.update()
-
+  def parse_arguments(self):
+      parser = argparse.ArgumentParser(description='')
+      parser.add_argument(
+          '-b', '--batchname', help="batchname of the invoice", type=str)
+      return parser.parse_args()
   def num2words(self,num):
     num = decimal.Decimal(num)
     decimal_part = num - int(num)
     num = int(num)
     if decimal_part:
         return self.num2words(num) + " point " + (" ".join(self.num2words(i) for i in str(decimal_part)[2:]))
-
     under_20 = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
     tens = ['Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
     above_100 ={ 100: 'Hundred', 1000: 'Thousand', 100000: 'Lakhs', 10000000: 'Crores' }
@@ -49,8 +52,6 @@ class InvoiceGen():
         return tens[num // 10 - 2] + ('' if num % 10 == 0 else ' ' + under_20[num % 10])
     pivot = max([key for key in above_100.keys() if key <= num])
     return self.num2words(num // pivot) + ' ' + above_100[pivot] + ('' if num % pivot==0 else ' ' + self.num2words(num % pivot))
-
-
 
   def write_to_csv(self,csv_filepath, data):
       with open(csv_filepath, 'w',newline='') as csvfile: 
@@ -214,7 +215,7 @@ class InvoiceGen():
     data = self.read_csv(self.csvfilepath)
     self.invoice_data = {}
     for row in data:
-      invoice_no = "BI" + str(self.count)
+      invoice_no = "MAR2023" + str(self.count)
       [beneficiary_name,	pan_number,	bank_account_no,	bank_name,	bank_ifsc_code,	account_type,	upi_id,	total_amount] = row
       total_amount = int(total_amount)
       id = str(beneficiary_name+bank_account_no+bank_ifsc_code).strip().lower().replace(" ","")
@@ -265,7 +266,6 @@ class InvoiceGen():
         invoice_date = datetime.today().strftime('%Y-%m-%d')
 
         template = copy.copy(self.get_html_string())
-        id = beneficiary_name + bank_account_no + bank_ifsc_code
         gst_number = ""
 
         template = template.replace("invoice_no",invoice_no)
