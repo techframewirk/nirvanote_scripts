@@ -31,6 +31,8 @@ def parse_arguments():
         '-s', '--sheetfolderid', help="id of the sheet drive folder", type=str)
     parser.add_argument(
         '-d', '--date', help="date folder name", type=str)
+    parser.add_argument(
+        '-c', '--csvdir', help="csv folder path", type=str)
     return parser.parse_args()
 
 def get_audio_duration(filepath):
@@ -92,8 +94,8 @@ def main():
         folder_id = args.folderid
         root_url = 'https://drive.google.com/file/d/'
         date_folder = args.date
-        intra_folder = "/Volumes/One Touch/newDataCode/intra/"+folder_name+"/"
-        intra_csv_folder = "/Volumes/One Touch/newDataCode/intra_csv/"+folder_name+"/"
+        intra_folder = Path(args.csvdir)/folder_name/"/"
+        
 
         files = []
         audio_files = {}

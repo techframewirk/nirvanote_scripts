@@ -194,7 +194,7 @@ def main():
                 
                 drive = build('drive', 'v3', credentials=creds)
                 drive.files().update(fileId=created_file_id, addParents=sheet_folder_id, removeParents='root').execute()
-                cmd = "python3 megdap_intra_drive_link_gen.py -n "+folder_name+" -i "+folder_id+" -s "+sheet_folder_id+" -d "+date_folder_name
+                cmd = "python3 megdap_intra_drive_link_gen.py -n "+folder_name+" -i "+folder_id+" -s "+sheet_folder_id+" -d "+date_folder_name+ " -c "+ csv_files_dir
                 subprocess.run(cmd,shell=True)
 
     
