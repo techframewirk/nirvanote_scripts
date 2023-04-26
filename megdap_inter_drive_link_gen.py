@@ -26,9 +26,13 @@ SCOPES = ['https://www.googleapis.com/auth/drive',
 def parse_arguments():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument(
-        '-n', '--foldername', help="name of the drive folder", type=str)
-    parser.add_argument(
         '-i', '--folderid', help="id of the drive folder", type=str)
+    parser.add_argument(
+        '-b', '--batchname', help="batchname", type=str)
+    parser.add_argument(
+        '-v', '--vendorname', help="vendorname", type=str)
+    parser.add_argument(
+        '-p', '--parentid', help="parent folder id", type=str)
     return parser.parse_args()
 
 def get_audio_duration(filepath):
@@ -80,41 +84,36 @@ def main():
             token.write(creds.to_json())
 
     try:
-        service = build('drive', 'v3', credentials=creds)
+        drive_service = build('drive', 'v3', credentials=creds)
+        sheet_service = build('sheets', 'v4', credentials=creds)
+
+        args = parse_arguments()
         root_url = 'https://drive.google.com/file/d/'
-        folder_id = "13YHL4Nd5RpygwT5ASLUZWByqxKFEwWfC"
-        date_folder_name = "16-03-2023"
-        csv_files_dir = "./xlsx_csv_files/megdap/"
-        shutil.rmtree("./intra/")
-        shutil.rmtree("./intra_csv/")
-        shutil.rmtree("./intra_csv_with_drive_link/")
+        folder_id = args.folderid
+        date_folder_name = args.batchname
+        parent_folder_id = args.parentid
+        root = Tk()
+        root.withdraw()
+        print("Select the megdap's csv file folder")
+        csv_files_dir = filedialog.askdirectory(title="Select the megdap's csv file folder")
+        root.update()
         districts = [Path(csv_files_dir)/district for district in os.listdir(csv_files_dir) if Path(Path(csv_files_dir)/district).is_dir()]
         for district in districts:
             folder_name = os.path.basename(district)
-            
-            intra_files_folder = Path(district)/date_folder_name
-            if Path(intra_files_folder).exists():
-                os.makedirs("./intra/"+folder_name)
-                os.makedirs("./intra_csv/"+folder_name)
-                os.makedirs("./intra_csv_with_drive_link/"+folder_name)
-                intra_files = [Path(intra_files_folder)/file for file in os.listdir(intra_files_folder) if Path(Path(intra_files_folder)/file).is_file() and not file.startswith('inter')]
-                for file in intra_files:
-                    shutil.copy(file,"./intra/"+folder_name)
-
-                inter_file = Path(intra_files_folder)/"inter.csv"
+            batch_folder = Path(district)/date_folder_name
+            if Path(batch_folder).exists():
+                inter_file = Path(batch_folder)/"inter.csv"
                 inter_csv_data = []
                 if Path(inter_file).exists():
                     inter_csv_data = read_csv(inter_file)
                 file_metadata = {
                     'name': folder_name,
                     'mimeType': 'application/vnd.google-apps.folder',
-                    'parents': ['1H1BRFDtDE2ghqT0gi-OZvq06uP8JoQPp']
+                    'parents': [parent_folder_id]
                 }
-
-                file = service.files().create(body=file_metadata, fields='id, name'
+                file = drive_service.files().create(body=file_metadata, fields='id, name'
                                             ).execute()
                 sheet_folder_id =  file['id']
-            
                 files = []
                 audio_files = {}
                 tsv_files = {}
@@ -124,7 +123,7 @@ def main():
                     audio_files = get_from_json("audio_files_megdap.json")
                 else:
                     while pageToken is not None: 
-                        results = service.files().list(pageSize=1000, q="'"+folder_id+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                        results = drive_service.files().list(pageSize=1000, q="'"+folder_id+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                         dates.extend(results.get('files',[]))
                         pageToken = results.get('nextPageToken')
                     write_to_json("dates.json",dates)
@@ -134,21 +133,21 @@ def main():
                         if date['name'] == date_folder_name:
                             print("DATE",date['name'])
                             while pageToken is not None: 
-                                results = service.files().list(pageSize=1000, q="'"+date['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                                results = drive_service.files().list(pageSize=1000, q="'"+date['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                 states.extend(results.get('files',[]))
                                 pageToken = results.get('nextPageToken')
                             for state in states:
                                 pageToken = ""
                                 districts = []
                                 while pageToken is not None: 
-                                    results = service.files().list(pageSize=1000, q="'"+state['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                                    results = drive_service.files().list(pageSize=1000, q="'"+state['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                     districts.extend(results.get('files',[]))
                                     pageToken = results.get('nextPageToken')
                                 for district in districts:
                                     pageToken = ""
                                     speakers = []
                                     while pageToken is not None: 
-                                        results = service.files().list(pageSize=1000, q="'"+district['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                                        results = drive_service.files().list(pageSize=1000, q="'"+district['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                         speakers.extend(results.get('files',[]))
                                         pageToken = results.get('nextPageToken')
                                     print("Length == ",len(speakers))
@@ -156,7 +155,7 @@ def main():
                                         print("SPEAKER == ",speaker['name'])
                                         pageToken = ""
                                         while pageToken is not None: 
-                                            results = service.files().list(pageSize=1000, q="'"+speaker['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                                            results = drive_service.files().list(pageSize=1000, q="'"+speaker['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                             files.extend(results.get('files',[]))
                                             pageToken = results.get('nextPageToken')
                     for file in files:
@@ -174,8 +173,7 @@ def main():
                             inter_csv_data_with_drive_link.append(row+[""]+audio1_drive_link+audio2_drive_link)
                     except:
                         print(row)
-                service = build('sheets', 'v4', credentials=creds)
-                sheet = service.spreadsheets()
+                sheet = sheet_service.spreadsheets()
                 sheet_name = "megdap_"+date_folder_name+"_"+folder_name+"_inter"
                 sheet_body = {
                     "properties":{
@@ -194,12 +192,8 @@ def main():
                 sheet.values().update(spreadsheetId=created_file_id, range=sheet_name+"!A1",
                                         valueInputOption="USER_ENTERED", body={"values": inter_csv_data_with_drive_link}).execute()
                 
-
                 drive = build('drive', 'v3', credentials=creds)
                 drive.files().update(fileId=created_file_id, addParents=sheet_folder_id, removeParents='root').execute()
-                print(sheet_folder_id)
-                # shutil.rmtree(intra_files_folder)
-                
                 cmd = "python3 megdap_intra_drive_link_gen.py -n "+folder_name+" -i "+folder_id+" -s "+sheet_folder_id+" -d "+date_folder_name
                 subprocess.run(cmd,shell=True)
 

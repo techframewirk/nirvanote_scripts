@@ -111,7 +111,7 @@ def main():
                 else:
                     while pageToken is not None: 
                         results = service.files().list(pageSize=1000, q="'"+folder_id+"' in parents",
-                        pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                            pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                         state_dists.extend(results.get('files',[]))
                         pageToken = results.get('nextPageToken')
                     for state_dist in state_dists:
