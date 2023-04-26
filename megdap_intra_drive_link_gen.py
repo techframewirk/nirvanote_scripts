@@ -103,21 +103,6 @@ def main():
         pageToken = ""
         intra_files = [Path(intra_folder)/file for file in os.listdir(intra_folder)
                        if Path(Path(intra_folder)/file).is_file() and file != 'inter.xlsx' and file != '.DS_Store']
-        # for intra_file in intra_files:
-        #     read_file = None
-        #     csv_filename = intra_csv_folder + \
-        #         str(Path(intra_file).stem) + '.csv'
-        #     if Path(csv_filename).exists():
-        #         continue
-        #     file_path = Path(intra_file)
-        #     file_extension = file_path.suffix.lower()[1:]
-        #     if file_extension == 'xlsx':
-        #         read_file = pd.read_excel(intra_file, engine='openpyxl')
-        #     elif file_extension == 'xls':
-        #         read_file = pd.read_excel(intra_file)
-        #     read_file.to_csv(csv_filename, index=None, header=True)
-        # intra_csv_files = [Path(
-        #     intra_csv_folder)/file for file in os.listdir(intra_csv_folder) if file.endswith('.csv')]
         intra_csv_data = {}
         for file in intra_files:
             intra_csv_data[Path(file).stem] = read_csv(file)

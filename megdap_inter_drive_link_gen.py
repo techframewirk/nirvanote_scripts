@@ -33,6 +33,8 @@ def parse_arguments():
         '-v', '--vendorname', help="vendorname", type=str)
     parser.add_argument(
         '-p', '--parentid', help="parent folder id", type=str)
+    parser.add_argument(
+        '-c', '--csvdir', help="csv folder path", type=str)
     return parser.parse_args()
 
 def get_audio_duration(filepath):
@@ -89,13 +91,13 @@ def main():
 
         args = parse_arguments()
         root_url = 'https://drive.google.com/file/d/'
-        folder_id = args.folderid
+        audio_batch_folder_id = args.folderid
         date_folder_name = args.batchname
         parent_folder_id = args.parentid
         root = Tk()
         root.withdraw()
         print("Select the megdap's csv file folder")
-        csv_files_dir = filedialog.askdirectory(title="Select the megdap's csv file folder")
+        csv_files_dir = args.csvdir
         root.update()
         districts = [Path(csv_files_dir)/district for district in os.listdir(csv_files_dir) if Path(Path(csv_files_dir)/district).is_dir()]
         for district in districts:
@@ -123,7 +125,7 @@ def main():
                     audio_files = get_from_json("audio_files_megdap.json")
                 else:
                     while pageToken is not None: 
-                        results = drive_service.files().list(pageSize=1000, q="'"+folder_id+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
+                        results = drive_service.files().list(pageSize=1000, q="'"+audio_batch_folder_id+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                         dates.extend(results.get('files',[]))
                         pageToken = results.get('nextPageToken')
                     write_to_json("dates.json",dates)
@@ -194,7 +196,7 @@ def main():
                 
                 drive = build('drive', 'v3', credentials=creds)
                 drive.files().update(fileId=created_file_id, addParents=sheet_folder_id, removeParents='root').execute()
-                cmd = "python3 megdap_intra_drive_link_gen.py -n "+folder_name+" -i "+folder_id+" -s "+sheet_folder_id+" -d "+date_folder_name+ " -c "+ csv_files_dir
+                cmd = "python3 megdap_intra_drive_link_gen.py -n "+folder_name+" -i "+audio_batch_folder_id+" -s "+sheet_folder_id+" -d "+date_folder_name+ " -c "+ csv_files_dir
                 subprocess.run(cmd,shell=True)
 
     

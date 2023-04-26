@@ -5,7 +5,15 @@ from pathlib import Path
 import os.path
 import pandas as pd
 
+import argparse
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument(
+        '-c', '--csvdir', help="csv folder path", type=str)
+    parser.add_argument(
+        '-v', '--vendorname', help="vendor folder path", type=str)
+    return parser.parse_args()
 
 def get_audio_duration(filepath):
     return audio_metadata.load(filepath)['streaminfo']['duration']
@@ -31,9 +39,9 @@ def get_from_json(filepath):
     with open(filepath, 'r') as JSON:
        return json.load(JSON)
     
-
-folder_path = "/Volumes/One Touch/xlsx_files/shaip/"
-
+args = parse_arguments()
+folder_path = args.csvdir
+vendor_name = args.vendorname
 xlsx_info = {}
 
 districts = [Path(folder_path) / district for district in os.listdir(folder_path) if Path(Path(folder_path)/district).is_dir() ]
@@ -57,8 +65,8 @@ else:
             xlsx_info[os.path.basename(district)][os.path.basename(date)]['intra'] = intra_files
     write_to_json('xlsx-info.json',xlsx_info)
 
+output_csv_shaip = "./xlsx_csv_files/"+vendor_name+"/"
 
-output_csv_shaip = "./xlsx_csv_files/shaip/"
 for district, dates in xlsx_info.items():
     district_folder = Path(Path(output_csv_shaip)/district)
     
