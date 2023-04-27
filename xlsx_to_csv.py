@@ -76,7 +76,7 @@ for district, dates in xlsx_info.items():
                 if Path(file_path).exists():
                         print("exists")
                         continue
-                df = pd.read_excel(files)
+                df = pd.read_excel(files, engine='openpyxl')
                 
                 df.to_csv(file_path)
             elif file_type == "intra":
@@ -100,6 +100,6 @@ for district, dates in xlsx_info.items():
                         print("exists")
 
                         continue
-                    df = pd.read_excel(file)
+                    df = pd.read_excel(file, engine='openpyxl')
 
                     df.to_csv(file_path)
