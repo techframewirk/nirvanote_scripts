@@ -51,7 +51,7 @@ else:
         dates = [ Path(district) / date for date in os.listdir(district) if Path(Path(district)/date).is_dir() ]
         for date in dates:
 
-            intra_files = [str(Path(date)/file) for file in os.listdir(date) if Path(Path(date)/file).is_file() and file != 'inter.xlsx' and file != '.DS_Store' and not file.startswith(".")]
+            intra_files = [str(Path(date)/file) for file in os.listdir(date) if Path(Path(date)/file).is_file() and file != 'inter.xlsx' and file != '.DS_Store' and not file.startswith(".") and file.endswith(".xlsx")]
             
             inter_file = str(Path(date) / 'inter.xlsx')
             xlsx_info[os.path.basename(district)][os.path.basename(date)] = {}
