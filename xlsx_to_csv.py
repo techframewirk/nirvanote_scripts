@@ -1,5 +1,4 @@
 import json
-import audio_metadata
 import csv
 from pathlib import Path
 import os.path
@@ -14,9 +13,6 @@ def parse_arguments():
     parser.add_argument(
         '-v', '--vendorname', help="vendor folder path", type=str)
     return parser.parse_args()
-
-def get_audio_duration(filepath):
-    return audio_metadata.load(filepath)['streaminfo']['duration']
 
 def write_to_csv(csv_filepath, data):
     with open(csv_filepath, 'w',newline='') as csvfile: 
