@@ -4,19 +4,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-
 import json
 import audio_metadata
 import csv
 from pathlib import Path
 import os.path
-import pandas as pd
 import argparse
 import numpy as np
-from tkinter import Tk, filedialog
-import datetime
-import time
-import shutil
 import subprocess
 
 SCOPES = ['https://www.googleapis.com/auth/drive',
@@ -94,11 +88,7 @@ def main():
         audio_batch_folder_id = args.folderid
         date_folder_name = args.batchname
         parent_folder_id = args.parentid
-        root = Tk()
-        root.withdraw()
-        print("Select the megdap's csv file folder")
         csv_files_dir = args.csvdir
-        root.update()
         districts = [Path(csv_files_dir)/district for district in os.listdir(csv_files_dir) if Path(Path(csv_files_dir)/district).is_dir()]
         for district in districts:
             folder_name = os.path.basename(district)
@@ -133,7 +123,6 @@ def main():
                         pageToken = ""
                         states = []
                         if date['name'] == date_folder_name:
-                            print("DATE",date['name'])
                             while pageToken is not None: 
                                 results = drive_service.files().list(pageSize=1000, q="'"+date['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                 states.extend(results.get('files',[]))
@@ -152,9 +141,7 @@ def main():
                                         results = drive_service.files().list(pageSize=1000, q="'"+district['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
                                         speakers.extend(results.get('files',[]))
                                         pageToken = results.get('nextPageToken')
-                                    print("Length == ",len(speakers))
                                     for speaker in speakers:
-                                        print("SPEAKER == ",speaker['name'])
                                         pageToken = ""
                                         while pageToken is not None: 
                                             results = drive_service.files().list(pageSize=1000, q="'"+speaker['id']+"' in parents",pageToken=pageToken, fields="nextPageToken, files(id, name, mimeType)").execute()
@@ -166,6 +153,7 @@ def main():
                         elif file['name'].endswith('.tsv'):
                             tsv_files[file['name']] = file['id']
                     write_to_json("audio_files_megdap.json",audio_files)
+                    
                 inter_csv_data_with_drive_link = [["File1","File2","Cosine Similarity","Result","Confidence","Detailed sheet link","File1 link", "File2 link"]]
                 for row in inter_csv_data:
                     try:

@@ -94,7 +94,7 @@ def main():
         folder_id = args.folderid
         root_url = 'https://drive.google.com/file/d/'
         date_folder = args.date
-        intra_folder = Path(args.csvdir)/folder_name/"/"
+        intra_folder = Path(args.csvdir)/folder_name/date_folder
         
 
         files = []
@@ -102,7 +102,7 @@ def main():
         tsv_files = {}
         pageToken = ""
         intra_files = [Path(intra_folder)/file for file in os.listdir(intra_folder)
-                       if Path(Path(intra_folder)/file).is_file() and file != 'inter.xlsx' and file != '.DS_Store']
+                       if Path(Path(intra_folder)/file).is_file() and file != 'inter.csv' and file != '.DS_Store']
         intra_csv_data = {}
         for file in intra_files:
             intra_csv_data[Path(file).stem] = read_csv(file)

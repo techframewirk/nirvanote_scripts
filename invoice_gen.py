@@ -1,13 +1,11 @@
 import json
 import csv
-import numpy as np
 import copy
 import pdfkit
 import decimal
 from datetime import datetime
 from pathlib import Path
 import os 
-from tkinter import Tk, filedialog
 import argparse
 
 class InvoiceGen():
@@ -21,21 +19,18 @@ class InvoiceGen():
       os.makedirs(self.pdf_dir)
     self.added = {}
     self.count = 1
-    self.get_dir_info()
-    self.get_history_of_invoices()
+    args = self.parse_arguments()
+    self.batchname = args.batchname
+    self.csvfilepath = args.csvfilepath
     self.get_invoice_data()
     self.gen_invoice()
 
-  def get_dir_info(self):
-    root = Tk()
-    root.withdraw()
-    print("Select the invoice csv file")
-    self.csvfilepath = filedialog.askopenfilename(title="Select the invoice csv file")
-    root.update()
   def parse_arguments(self):
       parser = argparse.ArgumentParser(description='')
       parser.add_argument(
           '-b', '--batchname', help="batchname of the invoice", type=str)
+      parser.add_argument(
+          '-c', '--csvfilepath', help="batchname of the invoice", type=str)
       return parser.parse_args()
   def num2words(self,num):
     num = decimal.Decimal(num)
@@ -200,22 +195,11 @@ class InvoiceGen():
     """
     return html_string
 
-  def get_history_of_invoices(self):
-    self.added = {}
-    if Path(os.path.join(self.output_dir,"added.json")).exists():
-      self.added = self.get_from_json(os.path.join(self.output_dir,"added.json"))
-      del self.added["modified"]
-      invoices_nos = self.added.values()
-      invoice_suffix_nos = []
-      for invoice_no in invoices_nos:
-        invoice_suffix_nos.append(int(invoice_no.replace("BI","")))
-      self.count =  max(invoice_suffix_nos) + 1
-
   def get_invoice_data(self):
     data = self.read_csv(self.csvfilepath)
     self.invoice_data = {}
     for row in data:
-      invoice_no = "MAR2023" + str(self.count)
+      invoice_no = self.batchname+"-" + str(self.count)
       [beneficiary_name,	pan_number,	bank_account_no,	bank_name,	bank_ifsc_code,	account_type,	upi_id,	total_amount] = row
       total_amount = int(total_amount)
       id = str(beneficiary_name+bank_account_no+bank_ifsc_code).strip().lower().replace(" ","")
@@ -223,7 +207,7 @@ class InvoiceGen():
       if invoice_no in self.added.values():
         for i in range(1000000):
           self.count += 1
-          invoice_no = "BI" + str(self.count)
+          invoice_no = self.batchname+"-" + str(self.count)
           if invoice_no not in self.added.values():
             break
       
